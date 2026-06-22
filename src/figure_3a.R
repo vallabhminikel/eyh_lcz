@@ -141,8 +141,7 @@ dviz = function(tbl,
   }
   if (!is.na(test)) {
     testfun = get(test) # e.g. ks.test
-    #control_color = control_group
-    control_color = "darkgrey"
+    control_color = control_group
     
     tbl_smry$p = as.numeric(NA)
     for (i in 1:nrow(tbl_smry)) {
@@ -202,7 +201,7 @@ dviz = function(tbl,
 
 
 ####Figure 3####
-dmso_col <- "darkgrey"
+dmso_col <- "#777777"
 eyh_col <- "#FE7F03"
 lcz_col <- '#7B01FC'
 
@@ -250,7 +249,7 @@ result = dviz(tbl=fig3, xlims=c(0.7,2.3), ylims=c(0,130), xvar="x", yvar="mean_i
               xcols = c('treatment_group'),
               colorvar="my_colors", barwidth=0.075, bartype="bar", 
               ylab=expression(paste("Normalized ", italic("Prnp"), " (%)")), 
-              log='', test='ks.test', control_group="dmso_col", pchvar="my_pch", mar=c(1.5,4,1,1))
+              log='', test='ks.test', control_group=dmso_col, pchvar="my_pch",  mar=c(1.5,4,1,1))
 
 abline(h = 100, lty = 2, lwd = 1.5) 
 dev.off()
