@@ -3,7 +3,7 @@ library(janitor)
 library(openxlsx)
 library(magick)
 library(drc); select=dplyr::select; summarize=dplyr::summarize
-setwd('~/d/sci/src/kd_moa')
+setwd('~/d/sci/src/eyh_lcz')
 source('../helper.R')
 
 
@@ -216,10 +216,9 @@ ht_gpi = read_csv('data/hit_table_gfp-gpi.csv', col_types=cols()) %>%
   clean_names() %>%
   mutate(cell_line = 'N2a-GFP-GPI')
 
-# what about this? from here: https://drive.google.com/drive/folders/1s-QXkSKnESEA2yfV00LQe80nKIuD3V1W?usp=drive_link
-dat = read_csv('data/gfp_well-level_correctedScoresOutput_data.csv') %>%
+dat = read_csv('data/gfp_well-level_correctedScoresOutput_data.csv.gz') %>%
   clean_names()
-dat = read_csv('data/gfp-gpi_well-level_correctedScoresOutput_data.csv') %>%
+dat = read_csv('data/gfp-gpi_well-level_correctedScoresOutput_data.csv.gz') %>%
   clean_names()
 dat %>%
   group_by(inchi_key, concentration) %>%
@@ -227,81 +226,8 @@ dat %>%
 # good - this has the dups
 # it appears that well_type == 'R1' is GFP siRNA and well_type == 'R2' is PrP siRNA
 
-dat %>%
-  mutate(condition = case_when(well_type=='R2' ~ 'poscon',
-                               well_type=='NC' ~ 'negcon')) %>%
-  filter(condition %in% c('poscon','negcon')) %>%
-  mutate(readout = median_membrane_intensity_integrated_intensity_pr_p_value) %>%
-  group_by(condition) %>%
-  summarize(.groups='keep',
-            mean_readout = mean(readout, na.rm=T),
-            sd_readout = sd(readout, na.rm=T)) -> zpt
 
-z_prime = 1 - (3*zpt$sd_readout[zpt$condition=='poscon'] + 3*zpt$sd_readout[zpt$condition=='negcon']) / 
-  abs(zpt$mean_readout[zpt$condition=='poscon'] - zpt$mean_readout[zpt$condition=='negcon'])
-
-
-dat %>%
-  mutate(condition = case_when(well_type=='R2' ~ 'poscon',
-                               well_type=='NC' ~ 'negcon')) %>%
-  filter(condition %in% c('poscon','negcon')) %>%
-  mutate(readout = median_cytoplasm_intensity_mean_intensity_pr_p_value) %>%
-  group_by(condition) %>%
-  summarize(.groups='keep',
-            mean_readout = mean(readout, na.rm=T),
-            sd_readout = sd(readout, na.rm=T)) -> zpt
-
-z_prime = 1 - (3*zpt$sd_readout[zpt$condition=='poscon'] + 3*zpt$sd_readout[zpt$condition=='negcon']) / 
-  abs(zpt$mean_readout[zpt$condition=='poscon'] - zpt$mean_readout[zpt$condition=='negcon'])
-
-
-dat %>%
-  mutate(condition = case_when(well_type=='R2' ~ 'poscon',
-                               well_type=='NC' ~ 'negcon')) %>%
-  filter(condition %in% c('poscon','negcon')) %>%
-  select(condition, matches('pr_p')) %>%
-  pivot_longer(cols=matches('pr_p')) %>%
-  group_by(condition, name) %>%
-  summarize(.groups='keep',
-            mean_readout = mean(value, na.rm=T),
-            sd_readout = sd(value, na.rm=T)) %>%
-  ungroup() %>%
-  group_by(name) %>%
-  summarize(.groups='keep',
-            zprime = 1 - (3*sd_readout[condition=='poscon'] + 3*sd_readout[condition=='negcon']) / 
-              abs(mean_readout[condition=='poscon'] - mean_readout[condition=='negcon'])) %>%
-  ungroup() -> r2_zprimes
-
-write_tsv(r2_zprimes,'display_items/r2_zprimes.tsv')
-
-
-dat %>%
-  mutate(condition = case_when(well_type=='R1' ~ 'poscon',
-                               well_type=='NC' ~ 'negcon')) %>%
-  filter(condition %in% c('poscon','negcon')) %>%
-  select(condition, matches('gfp')) %>%
-  pivot_longer(cols=matches('gfp')) %>%
-  group_by(condition, name) %>%
-  summarize(.groups='keep',
-            mean_readout = mean(value, na.rm=T),
-            sd_readout = sd(value, na.rm=T)) %>%
-  ungroup() %>%
-  group_by(name) %>%
-  summarize(.groups='keep',
-            zprime = 1 - (3*sd_readout[condition=='poscon'] + 3*sd_readout[condition=='negcon']) / 
-              abs(mean_readout[condition=='poscon'] - mean_readout[condition=='negcon'])) %>%
-  ungroup() -> r1_zprimes
-
-write_tsv(r1_zprimes,'display_items/r1_zprimes.tsv')
-
-
-
-resx=600
-png('display_items/replicate_agreement.png', width=6.5*resx, height=3.5*resx, res=resx)
-
-layout_matrix = matrix(1:2, byrow=T, nrow=1)
-layout(layout_matrix)
-par(mar=c(4,4,1,1))
+# Figure S1: replicate agreement (top row) + cross-assay agreement (bottom row)
 
 dat %>%
   filter(!is.na(dat$inchi_key)) %>%
@@ -311,50 +237,77 @@ dat %>%
   mutate(id = paste0(inchi_key, ' ', concentration)) %>%
   mutate(replicate = case_when(duplicated(id) ~ 2,
                                           TRUE ~ 1)) -> readouts_with_replicates
-  
-readouts_with_replicates %>% 
-  select(inchi_key, concentration, replicate, readout=median_cytoplasm_intensity_integrated_intensity_gfp_value) %>%
-  pivot_wider(names_from=replicate, values_from=readout) %>%
-  rename(r1 = `1`, r2 = `2`) -> replicates
 
-horiz_col = '#776699'
-lims = range(c(replicates$r1, replicates$r2))*1.1
-plot(replicates$r1, replicates$r2, xaxs='i', yaxs='i', xlim=lims, ylim=lims, axes=F, ann=F, pch=20, col=alpha(gfpcol, ci_alpha))
-axis(side=1, at=-7:7*10, lwd=0, cex.axis=0.5)
-axis(side=2, at=-7:7*10, las=2, lwd=0, cex.axis=0.5)
-axis(side=1, at=-7:7*10, labels = NA, tck=-0.02, pos=0)
-axis(side=2, at=-7:7*10, labels = NA, tck=-0.02, pos=0)
-mtext(side=1, line=2.2, text='replicate 1')
-mtext(side=2, line=2.2, text='replicate 2')
-mtext(side=3, line=0, text='cytoplasmic GFP')
-abline(a=0, b=1, col=horiz_col)
-pearsons = cor.test(replicates$r1, replicates$r2)
-rho = pearsons$estimate
-p = pearsons$p.value
-text(x=min(lims),y=max(lims)*.9,pos=4,cex=0.8,labels=paste0('r = ',formatC(rho, format='f', digits=3)))
+# Cross-assay agreement: 4-point picks (x) vs 8-point screen (y), GFP cells, membrane PrP
+eight = read_csv('data/8pt_well_gfp.csv', col_types=cols()) %>%
+  clean_names() %>%
+  select(inchi_key, concentration, median_membrane_intensity_integrated_intensity_pr_p_value) %>%
+  mutate(concentration = round(concentration)) %>%        # 6.32 -> 6, 20.0 -> 20
+  group_by(inchi_key, concentration) %>%
+  summarize(y8 = mean(median_membrane_intensity_integrated_intensity_pr_p_value, na.rm=T), .groups='drop')
 
+four = read_csv('data/4pt_picks.csv', col_types=cols()) %>%
+  rename(inchi_key = compound) %>%
+  select(inchi_key, gfp_20, gfp_6, gfpgpi_20, gfpgpi_6) %>%
+  pivot_longer(cols = c(gfp_20, gfp_6, gfpgpi_20, gfpgpi_6),
+               names_to = c('cell_line','concentration'),
+               names_pattern = '(gfpgpi|gfp)_(20|6)',
+               values_to = 'score_4pt') %>%
+  mutate(concentration = as.numeric(concentration)) %>%
+  filter(cell_line == 'gfp') %>%
+  group_by(inchi_key, concentration) %>%
+  summarize(score_4pt = mean(score_4pt, na.rm=T), .groups='drop')
 
-readouts_with_replicates %>% 
-  select(inchi_key, concentration, replicate, readout=median_membrane_intensity_integrated_intensity_pr_p_value) %>%
-  pivot_wider(names_from=replicate, values_from=readout) %>%
-  rename(r1 = `1`, r2 = `2`) -> replicates
+agreement = four %>%
+  inner_join(eight, by = c('inchi_key','concentration'))
 
-horiz_col = '#776699'
-lims = range(c(replicates$r1, replicates$r2))*1.1
-plot(replicates$r1, replicates$r2, xaxs='i', yaxs='i', xlim=lims, ylim=lims, axes=F, ann=F, pch=20, col=alpha(prpcol, ci_alpha))
-axis(side=1, at=-7:7*10, lwd=0, cex.axis=0.5)
-axis(side=2, at=-7:7*10, las=2, lwd=0, cex.axis=0.5)
-axis(side=1, at=-7:7*10, labels = NA, tck=-0.02, pos=0)
-axis(side=2, at=-7:7*10, labels = NA, tck=-0.02, pos=0)
-mtext(side=1, line=2.2, text='replicate 1')
-mtext(side=2, line=2.2, text='replicate 2')
-mtext(side=3, line=0, text='membrane PrP')
-abline(a=0, b=1, col=horiz_col)
-pearsons = cor.test(replicates$r1, replicates$r2)
-rho = pearsons$estimate
-p = pearsons$p.value
-text(x=min(lims),y=max(lims)*.9,pos=4,cex=0.8,labels=paste0('r = ',formatC(rho, format='f', digits=3)))
+resx=600
+png('display_items/figure_s1.png', width=6.5*resx, height=7*resx, res=resx)
+layout(matrix(1:4, byrow=T, nrow=2))
+par(mar=c(4,4,2,1))
+panel = 1
 
+# Panels A & B - replicate agreement
+for (readout_info in list(list(col='median_cytoplasm_intensity_integrated_intensity_gfp_value', lab='cytoplasmic GFP', color=gfpcol),
+                          list(col='median_membrane_intensity_integrated_intensity_pr_p_value', lab='membrane PrP', color=prpcol))) {
+  readouts_with_replicates %>%
+    select(inchi_key, concentration, replicate, readout=all_of(readout_info$col)) %>%
+    pivot_wider(names_from=replicate, values_from=readout) %>%
+    rename(r1 = `1`, r2 = `2`) -> replicates
+  horiz_col = '#776699'
+  lims = range(c(replicates$r1, replicates$r2))*1.1
+  plot(replicates$r1, replicates$r2, xaxs='i', yaxs='i', xlim=lims, ylim=lims, axes=F, ann=F, pch=20, col=alpha(readout_info$color, ci_alpha))
+  axis(side=1, at=-7:7*10, lwd=0, cex.axis=0.5)
+  axis(side=2, at=-7:7*10, las=2, lwd=0, cex.axis=0.5)
+  axis(side=1, at=-7:7*10, labels = NA, tck=-0.02, pos=0)
+  axis(side=2, at=-7:7*10, labels = NA, tck=-0.02, pos=0)
+  mtext(side=1, line=2.2, text='replicate 1')
+  mtext(side=2, line=2.2, text='replicate 2')
+  mtext(side=3, line=0, text=readout_info$lab)
+  abline(a=0, b=1, col=horiz_col)
+  pearsons = cor.test(replicates$r1, replicates$r2)
+  text(x=min(lims),y=max(lims)*.9,pos=4,cex=0.8,labels=paste0('r = ',formatC(pearsons$estimate, format='f', digits=3)))
+  mtext(LETTERS[panel], side=3, cex=1.5, adj = -0.1, line = 0.5); panel = panel + 1
+}
+
+# Panels C & D - 4-point vs 8-point cross-assay agreement
+for (conc in c(20, 6)) {
+  sub = agreement %>% filter(concentration == conc)
+  xlims = range(sub$score_4pt, na.rm=T); xlims = xlims + c(-1,1)*diff(xlims)*0.05
+  ylims = range(sub$y8, na.rm=T);        ylims = ylims + c(-1,1)*diff(ylims)*0.05
+  plot(sub$score_4pt, sub$y8, xlim=xlims, ylim=ylims, axes=F, ann=F, pch=20, col=prpcol)
+  xbigs = pretty(xlims); ybigs = pretty(ylims)
+  axis(side=1, at=-8:8*10, lwd=0, cex.axis=0.5)
+  axis(side=2, at=-8:8*10, las=2, lwd=0, cex.axis=0.5)
+  axis(side=1, at=-8:8*10, labels = NA, tck=-0.02, pos=0)
+  axis(side=2, at=-8:8*10, labels = NA, tck=-0.02, pos=0)
+  mtext(side=1, line=2.2, text='4-point screen')
+  mtext(side=2, line=2.2, text='8-point screen')
+  mtext(side=3, line=0, text=paste0(conc, ' µM'))
+  pearsons = cor.test(sub$score_4pt, sub$y8)
+  text(x=xlims[1], y=ylims[2], pos=4, cex=0.8, labels=paste0('r = ', formatC(pearsons$estimate, format='f', digits=3)))
+  mtext(LETTERS[panel], side=3, cex=1.5, adj = -0.1, line = 0.5); panel = panel + 1
+}
 dev.off()
 
 
