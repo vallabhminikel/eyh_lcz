@@ -228,7 +228,7 @@ fig3 <- fig3 %>%
     ),
     my_pch = 21
   ) %>%
-  filter(treatment_group != 'Y-320') %>%
+  dplyr::filter(treatment_group != 'Y-320') %>%
   rename(x = x_position, intensity = normalized_to_dmso) %>%
   group_by(date, treatment_group, tx, x, my_colors, my_pch) %>%
   summarize(.groups='keep',
@@ -238,7 +238,7 @@ fig3 <- fig3 %>%
 
 resx = 600
 
-png('display_items/figure_3A.png',
+png('display_items/figure_3a.png',
     width = 3.5 * resx,
     height = 2 * resx,
     res = resx)

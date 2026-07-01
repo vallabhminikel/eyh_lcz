@@ -1,4 +1,4 @@
-###supplemental Figure 4: PD data for EYH, LCZ in other organs###
+###supplemental Figure 7: PD data for EYH, LCZ in other organs###
 library(tidyverse)
 library(janitor)
 
@@ -8,7 +8,7 @@ sup_pd <- read_csv("data/EYH LCZ PD-2024-01( PD-2023-28) report - machine-readab
 
 #pivot longer, and setup for dataviz
 sup_pd_longer <- sup_pd %>%
-  filter(compound %in% c("EYH", "LCZ")) %>%
+  dplyr::filter(compound %in% c("EYH", "LCZ")) %>%
   pivot_longer(cols=c(plasma_conc, spleen_conc, quadricep_conc), names_to = "organ", values_to = "concentration") %>%
   mutate(x_pos = case_when(
     organ == "spleen_conc"    ~ 1,
@@ -47,14 +47,14 @@ if (!dir.exists("display_items")) {
   dir.create("display_items")
 }
 
-png('display_items/figure_S4.png', width = 6.3, height = 3, units = "in", res = 600)
+png('display_items/figure_s7.png', width = 6.3, height = 3, units = "in", res = 600)
 layout_matrix <- matrix(c(1, 2), nrow = 1)
 layout(layout_matrix, widths = c(0.5, 0.5))    
 
-do.call(dviz, c(list(tbl = sup_pd_longer %>% filter(compound == "EYH")), pd_style)); abline(h = 1.9, lty = 2)
+do.call(dviz, c(list(tbl = sup_pd_longer %>% dplyr::filter(compound == "EYH")), pd_style)); abline(h = 1.9, lty = 2)
 mtext("compound (\U003BCM)", side = 2, outer = F, line = 2, cex = 1.1, font=1)
 mtext("EYH", side = 3, outer = F, line = 2, cex = 1.5, font=1)
-do.call(dviz, c(list(tbl = sup_pd_longer %>% filter(compound == "LCZ")), pd_style)); abline(h = 0.5, lty = 2)
+do.call(dviz, c(list(tbl = sup_pd_longer %>% dplyr::filter(compound == "LCZ")), pd_style)); abline(h = 0.5, lty = 2)
 mtext("LCZ", side = 3, outer = F, line = 2, cex = 1.5, font=1)
 
 dev.off()

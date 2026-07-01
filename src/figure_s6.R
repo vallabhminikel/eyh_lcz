@@ -83,7 +83,6 @@ common_theme <- theme_minimal() +
     legend.key.size = unit(1.5, "lines")
   )
 
-# Define a reusable x-axis scale with your desired minor breaks
 custom_x_scale <- scale_x_flowjo_biexp(
   widthBasis = -100, maxValue = 16777216, pos = 6.2247198959, neg = 0,
   breaks = custom_breaks, 
@@ -94,7 +93,7 @@ custom_x_scale <- scale_x_flowjo_biexp(
 
 
 #plot for A375
-p_a375 <- ggplot(df_supplemental %>% filter(cell_line == "A375"), aes(x = value, fill = status)) +
+p_a375 <- ggplot(df_supplemental %>% dplyr::filter(cell_line == "A375"), aes(x = value, fill = status)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 200) +
   scale_fill_manual(values = c("Negative Control" = "grey", "Cas9-Positive" = "cyan"), name = '') +
   custom_x_scale + 
@@ -104,7 +103,7 @@ p_a375 <- ggplot(df_supplemental %>% filter(cell_line == "A375"), aes(x = value,
   common_theme
 
 #plot for HT29
-p_ht29 <- ggplot(df_supplemental %>% filter(cell_line == "HT29"), aes(x = value, fill = status)) +
+p_ht29 <- ggplot(df_supplemental %>% dplyr::filter(cell_line == "HT29"), aes(x = value, fill = status)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 200) +
   scale_fill_manual(values = c("Negative Control" = "grey", "Cas9-Positive" = "cyan"), name = '') +
   custom_x_scale + 
@@ -114,7 +113,7 @@ p_ht29 <- ggplot(df_supplemental %>% filter(cell_line == "HT29"), aes(x = value,
   common_theme
 
 #plot for U87MG
-p_u87mg <- ggplot(df_supplemental %>% filter(cell_line == "U87MG"), aes(x = value, fill = status)) +
+p_u87mg <- ggplot(df_supplemental %>% dplyr::filter(cell_line == "U87MG"), aes(x = value, fill = status)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 200) +
   scale_fill_manual(values = c("Negative Control" = "grey", "Cas9-Positive" = "cyan"), name = '') +
   custom_x_scale + 
@@ -124,7 +123,7 @@ p_u87mg <- ggplot(df_supplemental %>% filter(cell_line == "U87MG"), aes(x = valu
   common_theme
 
 #plot for U251MG
-p_u251mg <- ggplot(df_supplemental %>% filter(cell_line == "U251MG"), aes(x = value, fill = status)) +
+p_u251mg <- ggplot(df_supplemental %>% dplyr::filter(cell_line == "U251MG"), aes(x = value, fill = status)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 200) +
   scale_fill_manual(values = c("Negative Control" = "grey", "Cas9-Positive" = "cyan"), name = '') +
   custom_x_scale +
@@ -142,6 +141,6 @@ print(combined_plot)
 if (!dir.exists("display_items")) {
   dir.create("display_items")
 }
-ggsave("display_items/figure_S3B.png", plot = combined_plot, dpi=600, height = 7800, width = 9000, units = 'px')
+ggsave("display_items/figure_s6b.png", plot = combined_plot, dpi=600, height = 7800, width = 9000, units = 'px')
 
 
